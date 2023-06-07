@@ -26,7 +26,7 @@ app.use(cors());
 app.use(express.json());
 
 app.get('/', (req, res) => {
-  res.json('Connection established');
+  res.json(database.users);
 });
 
 app.get('/profile/:user', (req, res) => {
@@ -52,15 +52,16 @@ app.post('/register', async (req, res) => {
   const { name, password } = req.body;
 
   if (database.users.some(item => item.name === name))
-    res.json('Account Name Already Taken');
+    res.status(409).json({ error: 'Username is already taken' });
   else {
     try {
       const passHash = await argon2.hash(password);
       const newUser = new User(name, passHash);
       database.users.push(newUser);
-      res.json(newUser);
+      res.json({ message: 'Registration successful' });
     } catch {
-      res.json('Problem occurred, please try again!');
+      console.error('Failed to hash password:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
     }
   }
 });
