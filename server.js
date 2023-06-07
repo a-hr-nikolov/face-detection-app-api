@@ -30,27 +30,36 @@ app.get('/', (req, res) => {
 app.get('/profile/:user', (req, res) => {
   const name = req.params.user;
   const reqUser = database.users.find(user => user.name === name);
+
   if (reqUser) res.json(reqUser);
-  else res.status(404).json('No such user');
+  else res.status(404).json("The requested user doesn't exist.");
 });
 
 app.post('/signin', async (req, res) => {
   const { name, password } = req.body;
   const reqUser = database.users.find(user => user.name === name);
+  if (!reqUser)
+    return res.status(404).json("This username doesn't exist in our database.");
+
   const hashVerified = await argon2.verify(reqUser?.passHash, password);
   if (hashVerified) res.json({ status: 'Success', object: reqUser });
-  else res.status(400).json('Login Failed');
+  else res.status(400).json('Wrong Password');
 });
 
 app.post('/register', async (req, res) => {
   const { name, password } = req.body;
+
   if (database.users.some(item => item.name === name))
     res.json('Account Name Already Taken');
   else {
-    const passHash = await argon2.hash(password);
-    const newUser = new User(name, passHash);
-    database.users.push(newUser);
-    res.json(newUser);
+    try {
+      const passHash = await argon2.hash(password);
+      const newUser = new User(name, passHash);
+      database.users.push(newUser);
+      res.json(newUser);
+    } catch {
+      res.json('Problem occurred, please try again!');
+    }
   }
 });
 
@@ -64,14 +73,3 @@ app.put('/detected', (req, res) => {
 });
 
 app.listen(3000);
-
-/* 
-
-Routes:
-/ - get, responds with "Successful";
-/signin - post, responds with success/fail
-/register - post, responds with the new user object
-/profile/:userId - GET = user
-/detected - PUT/PATCH - updates the user with increased count, returns the updated user/count
-
-*/
