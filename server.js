@@ -1,5 +1,6 @@
 const express = require('express');
 const argon2 = require('argon2');
+const cors = require('cors');
 
 const app = express();
 class User {
@@ -21,10 +22,11 @@ argon2.hash('strongestpass').then(hash => {
   database.users.push(new User('Jonkata', hash));
 });
 
+app.use(cors());
 app.use(express.json());
 
 app.get('/', (req, res) => {
-  res.send('This is working');
+  res.json('Connection established');
 });
 
 app.get('/profile/:user', (req, res) => {
