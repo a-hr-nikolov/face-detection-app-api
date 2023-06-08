@@ -40,8 +40,7 @@ app.get('/profile/:user', (req, res) => {
 app.post('/signin', async (req, res) => {
   const { name, password } = req.body;
   const reqUser = database.users.find(user => user.name === name);
-  if (!reqUser)
-    return res.status(404).json("This username doesn't exist in our database.");
+  if (!reqUser) return res.status(400).json('Wrong user and/or password');
 
   const hashVerified = await argon2.verify(reqUser?.passHash, password);
   if (hashVerified) res.json({ status: 'Success', object: reqUser });
