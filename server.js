@@ -17,14 +17,15 @@ const db = knex({
 const app = express();
 
 db.select('*')
-  .from('users')
-  .then(data => console.log(data));
+  .from('login')
+  .where('username', 'jonkata')
+  .then(([data]) => console.log(data));
 
 class User {
   static createdCount = 0;
-  constructor(name, passHash) {
+  constructor(username, passHash) {
     this.id = (++User.createdCount).toString().padStart(8, '0');
-    this.name = name;
+    this.username = username;
     this.passHash = passHash;
     this.facesDetected = 0;
     this.registrationDate = new Date();
@@ -47,41 +48,50 @@ app.get('/', (req, res) => {
 });
 
 app.get('/profile/:user', (req, res) => {
-  const name = req.params.user;
-  const reqUser = database.users.find(user => user.name === name);
+  const username = req.params.user;
+  const reqUser = database.users.find(user => user.username === username);
 
   if (reqUser) res.json(reqUser);
   else res.status(404).json("The requested user doesn't exist.");
 });
 
 app.post('/signin', async (req, res) => {
-  const { name, password } = req.body;
-  const reqUser = database.users.find(user => user.name === name);
-  if (!reqUser) return res.status(400).json('Wrong user and/or password');
+  const { username, password } = req.body;
 
-  const hashVerified = await argon2.verify(reqUser?.passHash, password);
-  if (hashVerified) res.json({ status: 'Success', object: reqUser });
-  else res.status(400).json('Wrong Password');
+  try {
+    let [user] = await db.select('*').from('login').where('username', username);
+
+    const hashVerified = await argon2.verify(user.hash, password);
+    if (!hashVerified) throw 'Wrong credentials';
+
+    [user] = await db.select('*').from('users').where('username', username);
+
+    res.json({ status: 'Success', object: user });
+  } catch (err) {
+    return res.status(400).json('Wrong credentials, try again.');
+  }
 });
 
 app.post('/register', async (req, res) => {
-  const { name, password } = req.body;
+  const { username, password } = req.body;
+  if (username === '')
+    return res.status(409).json('Empty username/password not allowed');
 
   try {
     const entry = await db('users').returning('*').insert({
-      username: name,
+      username: username,
       joined: new Date(),
     });
     try {
       const passHash = await argon2.hash(password);
       await db('login').insert({
-        username: name,
+        username: username,
         hash: passHash,
       });
       res.json(entry);
     } catch (error) {
       console.error('Failed to hash password:', error);
-      await db('users').where('username', name).del();
+      await db('users').where('username', username).del();
       return res.status(500).json({ error: 'Internal Server Error' });
     }
   } catch (err) {
@@ -90,8 +100,8 @@ app.post('/register', async (req, res) => {
 });
 
 app.put('/detected', (req, res) => {
-  const { name, facesDetected } = req.body;
-  const reqUser = database.users.find(user => user.name === name);
+  const { username, facesDetected } = req.body;
+  const reqUser = database.users.find(user => user.username === username);
   if (reqUser) {
     reqUser.facesDetected += facesDetected;
     res.json(reqUser);
