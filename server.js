@@ -1,8 +1,25 @@
 const express = require('express');
 const argon2 = require('argon2');
 const cors = require('cors');
+const knex = require('knex');
+
+const db = knex({
+  client: 'pg',
+  connection: {
+    host: '127.0.0.1',
+    port: 5432,
+    user: 'postgres',
+    password: '1234',
+    database: 'face-detect-app',
+  },
+});
 
 const app = express();
+
+db.select('*')
+  .from('users')
+  .then(data => console.log(data));
+
 class User {
   static createdCount = 0;
   constructor(name, passHash) {
