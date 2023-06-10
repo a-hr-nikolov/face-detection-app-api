@@ -67,18 +67,25 @@ app.post('/signin', async (req, res) => {
 app.post('/register', async (req, res) => {
   const { name, password } = req.body;
 
-  if (database.users.some(item => item.name === name))
-    res.status(409).json({ error: 'Username is already taken' });
-  else {
+  try {
+    const entry = await db('users').returning('*').insert({
+      username: name,
+      joined: new Date(),
+    });
     try {
       const passHash = await argon2.hash(password);
-      const newUser = new User(name, passHash);
-      database.users.push(newUser);
-      res.json({ message: 'Registration successful' });
-    } catch {
+      await db('login').insert({
+        username: name,
+        hash: passHash,
+      });
+      res.json(entry);
+    } catch (error) {
       console.error('Failed to hash password:', error);
-      res.status(500).json({ error: 'Internal Server Error' });
+      await db('users').where('username', name).del();
+      return res.status(500).json({ error: 'Internal Server Error' });
     }
+  } catch (err) {
+    return res.status(409).json({ error: 'Username is already taken' });
   }
 });
 
