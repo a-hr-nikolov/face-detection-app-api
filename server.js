@@ -53,23 +53,29 @@ app.post('/register', async (req, res) => {
     return res.status(409).json('Empty username/password not allowed');
 
   try {
-    const entry = await db('users').returning('*').insert({
-      username: username,
-      joined: new Date(),
-    });
-    try {
-      const passHash = await argon2.hash(password);
-      await db('login').insert({
-        username: username,
-        hash: passHash,
-      });
+    await db.transaction(async trx => {
+      const [entry] = await trx('users').insert(
+        {
+          username: username,
+          joined: new Date(),
+        },
+        '*'
+      );
+      try {
+        const passHash = await argon2.hash(password);
+        await trx('login').insert({
+          username: username,
+          hash: passHash,
+        });
+      } catch (err) {
+        throw { code: 500, message: 'Hash fail' };
+      }
+
       res.json(entry);
-    } catch (error) {
-      console.error('Failed to hash password:', error);
-      await db('users').where('username', username).del();
-      return res.status(500).json({ error: 'Internal Server Error' });
-    }
+    });
   } catch (err) {
+    if (err.code === 500)
+      return res.status(500).json({ error: 'Internal Server Error' });
     return res.status(409).json({ error: 'Username is already taken' });
   }
 });
