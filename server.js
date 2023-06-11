@@ -23,7 +23,7 @@ app.get('/profile/:user', async (req, res) => {
   const username = req.params.user;
 
   try {
-    let [user] = await db.select('*').from('users').where('username', username);
+    let [user] = await db('users').select('*').where({ username });
     res.json(user);
   } catch {
     res.status(404).json("Couldn't get the requested user");
@@ -34,14 +34,14 @@ app.post('/signin', async (req, res) => {
   const { username, password } = req.body;
 
   try {
-    let [user] = await db.select('*').from('login').where('username', username);
+    let [user] = await db('login').select('*').where({ username });
 
     const hashVerified = await argon2.verify(user.hash, password);
     if (!hashVerified) throw 'Wrong credentials';
 
-    [user] = await db.select('*').from('users').where('username', username);
+    [user] = await db('users').select('*').where({ username });
 
-    res.json({ status: 'Success', object: user });
+    res.json(user);
   } catch (err) {
     return res.status(400).json('Wrong credentials, try again.');
   }
@@ -85,9 +85,8 @@ app.put('/detected', async (req, res) => {
 
   try {
     let [user] = await db('users')
-      .where('username', username)
-      .update('detected', detected)
-      .returning('*');
+      .where({ username })
+      .update({ detected }, '*');
     res.json(user);
   } catch {
     res.status(400).send('No such user');
