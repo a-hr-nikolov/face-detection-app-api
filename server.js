@@ -6,6 +6,7 @@ const { handleRegister } = require('./controllers/register');
 const { handleSignin } = require('./controllers/signin');
 const { handleDetected } = require('./controllers/detected');
 const { handleProfileRequest } = require('./controllers/profile');
+const { handleDetect } = require('./controllers/detection-api');
 
 const db = knex({
   client: 'pg',
@@ -24,6 +25,8 @@ app.use(cors());
 app.use(express.json());
 
 app.get('/profile/:user', handleProfileRequest(db));
+
+app.get('/detect', handleDetect);
 
 app.post('/signin', handleSignin(db, argon2));
 
