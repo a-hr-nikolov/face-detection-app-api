@@ -8,6 +8,8 @@ const { handleDetected } = require('./controllers/detected');
 const { handleProfileRequest } = require('./controllers/profile');
 const { handleDetect } = require('./controllers/detection-api');
 
+const PORT = process.env.PORT || 3000;
+
 const db = knex({
   client: 'pg',
   connection: {
@@ -34,4 +36,4 @@ app.post('/register', handleRegister(db, argon2));
 
 app.put('/detected', handleDetected(db));
 
-app.listen(3000);
+app.listen(PORT);
