@@ -2,8 +2,10 @@ const { ClarifaiStub, grpc } = require('clarifai-nodejs-grpc');
 
 const stub = ClarifaiStub.grpc();
 
+const CLARIFAI_KEY = process.env.CLARIFAI;
+
 const metadata = new grpc.Metadata();
-metadata.set('authorization', 'Key 99ffb1859828459aa26dea23b7c089df');
+metadata.set('authorization', CLARIFAI_KEY);
 
 const handleDetect = (req, res) => {
   const { url } = req.query;

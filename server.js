@@ -11,11 +11,11 @@ const { handleDetect } = require('./controllers/detection-api');
 const db = knex({
   client: 'pg',
   connection: {
-    host: '127.0.0.1',
-    port: 5432,
+    host: process.env.PGHOST,
+    port: process.env.PGPORT,
     user: 'postgres',
-    password: '1234',
-    database: 'face-detect-app',
+    password: process.env.PGPASS,
+    database: process.env.PGDB,
   },
 });
 
