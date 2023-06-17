@@ -1,29 +1,23 @@
+require('dotenv').config();
 const express = require('express');
 const argon2 = require('argon2');
 const cors = require('cors');
-const knex = require('knex');
 const { handleRegister } = require('./controllers/register');
 const { handleSignin } = require('./controllers/signin');
 const { handleDetected } = require('./controllers/detected');
 const { handleProfileRequest } = require('./controllers/profile');
 const { handleDetect } = require('./controllers/detection-api');
+const { knexOptions } = require('./config/knexOptions');
+const { corsOptions } = require('./config/corsOptions');
+
+const db = require('knex')(knexOptions);
 
 const PORT = process.env.PORT || 3000;
 
-const db = knex({
-  client: 'pg',
-  connection: {
-    host: process.env.PGHOST,
-    port: process.env.PGPORT,
-    user: 'postgres',
-    password: process.env.PGPASS,
-    database: process.env.PGDB,
-  },
-});
-
 const app = express();
 
-app.use(cors());
+app.use(cors({ corsOptions }));
+
 app.use(express.json());
 
 app.get('/profile/:user', handleProfileRequest(db));
